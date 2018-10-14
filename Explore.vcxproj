@@ -70,8 +70,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>D:\Code\OpenGL\Explore\headers;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Code\OpenGL\Explore\libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>./headers;$(IncludePath)</IncludePath>
+    <LibraryPath>./libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
