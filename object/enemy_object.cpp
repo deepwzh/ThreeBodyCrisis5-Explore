@@ -1,16 +1,15 @@
 #include "enemy_object.h"
 
 EnemyObject::EnemyObject()
-	: GameObject(), HealthPoint(0), IsExist(0) { }
+	: GameObject(), HealthPoint(0) {}
 
 
 EnemyObject::EnemyObject(glm::vec2 pos, glm::vec2 size, glm::vec2 velocity, GLint hp, Texture2D sprite)
-	: GameObject(pos, size, sprite, velocity), HealthPoint(hp),IsExist(GL_FALSE) {}
+	: GameObject(pos, size, sprite, velocity), HealthPoint(hp) {}
 
 
 glm::vec2 EnemyObject::Move(GLfloat dt, GLuint window_width, GLuint window_height)
 {
-	//std::cout << "I can Move2";
 	if (this->IsExist)
 	{
 		this->Position += this->Velocity * dt;
@@ -44,5 +43,5 @@ void EnemyObject::Reset(glm::vec2 position, glm::vec2 velocity)
 {
 	this->Position = position;
 	this->Velocity = velocity;
-	this->IsExist = false;
+	this->IsExist = GL_FALSE;
 }

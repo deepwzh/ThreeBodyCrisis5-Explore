@@ -1,16 +1,20 @@
 #include "shell_object.h"
 
 ShellObject::ShellObject()
-	: GameObject(), Radius(12.5f), Stuck(true) { }
+	: GameObject(), Radius(12.5f) {
+	IsExist = GL_FALSE;
+}
 
 
 ShellObject::ShellObject(glm::vec2 pos, GLfloat radius, glm::vec2 velocity, GLint av, Texture2D sprite)
-	: GameObject(pos, glm::vec2(radius * 2, radius * 2), sprite, velocity), AttackValue(av), Radius(radius), Stuck(GL_TRUE){}
+	: GameObject(pos, glm::vec2(radius * 2, radius * 2), sprite, velocity), AttackValue(av), Radius(radius){
+	IsExist = GL_FALSE;
+}
 
 
 glm::vec2 ShellObject::Move(GLfloat dt, GLuint window_width, GLuint window_height)
 {
-	if (!this->Stuck)
+	if (this->IsExist)
 	{
 		this->Position += this->Velocity * dt;
 
@@ -43,5 +47,5 @@ void ShellObject::Reset(glm::vec2 position, glm::vec2 velocity)
 {
 	this->Position = position;
 	this->Velocity = velocity;
-	this->Stuck = true;
+	this->IsExist = GL_FALSE;
 }

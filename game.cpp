@@ -14,8 +14,11 @@ ISoundEngine		*SoundEngine = createIrrKlangDevice();
 
 
 
-Game::Game(GLuint width, GLuint height)
-	: State(GAME_ACTIVE), Keys(), Width(width), Height(height),LevelThInGame(0){}
+Game::Game()
+	: State(GAME_ACTIVE), Keys(), CursorX(0),CursorY(0){
+	LevelInGame = new Level();
+	LevelThInGame = LevelInGame->levelTh;
+}
 
 Game::~Game()
 {
@@ -31,7 +34,8 @@ Game::~Game()
 
 void Game::Init()
 {
-	LevelInGame = new Level();
+	LevelInGame->getWindowSize(this->Width, this->Height);
+
 	// Load and Configure shaders
 	ResourceManager::LoadShader("render/shaders/sprite.vss", "render/shaders/sprite.fss", NULL, "sprite");
 	glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width), static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
@@ -41,10 +45,14 @@ void Game::Init()
 	
 	//Creat Player and Shells
 	ResourceManager::LoadTexture("res/pic/huaji.png", GL_TRUE, "face");
-	ResourceManager::LoadTexture("res/pic/myship.png", GL_TRUE, "player");
+	ResourceManager::LoadTexture("res/pic/myship0up.png", GL_TRUE, "player0up");
+	ResourceManager::LoadTexture("res/pic/myship0left.png", GL_TRUE, "player0left");
+	ResourceManager::LoadTexture("res/pic/myship0down.png", GL_TRUE, "player0down");
+	ResourceManager::LoadTexture("res/pic/myship0right.png", GL_TRUE, "player0right");
 	ResourceManager::LoadTexture("res/pic/huaji.png", GL_TRUE, "huajishell");
-	glm::vec2 playerPos = glm::vec2(0, WINDOW_HEIGHT - PLAYER_SIZE.y);
-	Player = new PlayerObject(playerPos, PLAYER_SIZE, PLAYER_INIT_V, ResourceManager::GetTexture("player"));
+	glm::vec2 playerPos = glm::vec2(0, this->Height - PLAYER_SIZE.y);
+	Player = new PlayerObject(playerPos, PLAYER_SIZE, PLAYER_INIT_V, ResourceManager::GetTexture("player0up"));
+	Player->Direction = 1;
 	for (int i = 0; i < SHELLNUM; i++) 
 	{
 		glm::vec2 ballPos = playerPos + glm::vec2(PLAYER_SIZE.x / 2 - SHELL_RADIUS, -SHELL_RADIUS * 2);
@@ -56,7 +64,7 @@ void Game::Init()
 
 	//Load Fonts
 	Text = new TextRenderer(this->Width, this->Height);
-	Text->Load("res/fonts/yahei.ttf", 10);
+	Text->Load("res/fonts/yahei.ttf", 24);
 
 	//Load Particles
 	ResourceManager::LoadShader("render/shaders/particle.vss", "render/shaders/particle.fss", nullptr, "particle");
@@ -70,26 +78,32 @@ void Game::Init()
 	Effects = new PostProcessor(ResourceManager::GetShader("postprocessing"), this->Width, this->Height);
 
 	//Load Music
-	SoundEngine->play2D("res/sound/ddz.mp3", GL_TRUE);
+	//SoundEngine->play2D("res/sound/ddz.mp3", GL_TRUE);
 }
 
 
 GLboolean isV = GL_FALSE;
-void Game::Update(GLfloat dt)
+void Game::Update(GLfloat dt, GLfloat poscx, GLfloat poscy)
 {
+	this->CursorX = poscx;
+	this->CursorY = poscy;
 	//Move Shells
 	for (int i = 0; i < SHELLNUM; i++)
 		HuajiShell[i]->Move(dt, this->Width,this->Height);
+
 	//Move Enemy
 	LevelInGame->EnemyMove(dt);
+
 	//Check and deal with Collisions
 	this->DoCollisions();
-	//Check if load Particles
+
+	//Check if load Particles	
 	for (int i = 0; i < SHELLNUM; i++)
 	{
-		if(HuajiShell[i]->Stuck == GL_FALSE)
+		if(HuajiShell[i]->IsRender == GL_TRUE)
 			Particles->Update(dt, *HuajiShell[i], 2, glm::vec2(HuajiShell[i]->Radius / 2));
 	}
+
 	//Define ShakeTime
 	if (ShakeTime > 0.0f)
 	{
@@ -97,11 +111,13 @@ void Game::Update(GLfloat dt)
 		if (ShakeTime <= 0.0f)
 			Effects->Shake = GL_FALSE;
 	}
+	
 	//If player was died
 	if (Player->HealthPoint <= 0)
 	{
 		this->ResetPlayer();
 	}
+
 	//ÒýÁ¦³¡ºÚ¶´
 	if (Player->Position.x > 1200 && Player->Position.y > 500 && isV == GL_FALSE)
 	{
@@ -123,9 +139,12 @@ void Game::ProcessInput(GLfloat dt)
 	if (this->State == GAME_ACTIVE)
 	{
 		glm::vec2 velocity(Player->Velocity.x * dt, Player->Velocity.y * dt);
+
 		// Move playerboard
 		if (this->Keys[GLFW_KEY_LEFT] || this->Keys[GLFW_KEY_A])
 		{
+			Player->Sprite = ResourceManager::GetTexture("player0left");
+			Player->Direction = 3;
 			if (Player->Position.x >= 0)
 			{
 				if (this->Keys[GLFW_KEY_Q]) velocity *= 2;
@@ -134,6 +153,8 @@ void Game::ProcessInput(GLfloat dt)
 		}
 		if (this->Keys[GLFW_KEY_RIGHT] || this->Keys[GLFW_KEY_D])
 		{
+			Player->Sprite = ResourceManager::GetTexture("player0right");
+			Player->Direction = 4;
 			if (Player->Position.x <= this->Width - Player->Size.x)
 			{
 				if (this->Keys[GLFW_KEY_Q]) velocity *= 2;
@@ -142,6 +163,8 @@ void Game::ProcessInput(GLfloat dt)
 		}
 		if (this->Keys[GLFW_KEY_DOWN] || this->Keys[GLFW_KEY_S])
 		{
+			Player->Sprite = ResourceManager::GetTexture("player0down");
+			Player->Direction = 2;
 			if (Player->Position.y <= this->Height - Player->Size.y)
 			{
 				if (this->Keys[GLFW_KEY_Q]) velocity *= 2;
@@ -150,6 +173,8 @@ void Game::ProcessInput(GLfloat dt)
 		}
 		if (this->Keys[GLFW_KEY_UP] || this->Keys[GLFW_KEY_W])
 		{
+			Player->Sprite = ResourceManager::GetTexture("player0up");
+			Player->Direction = 1;
 			if (Player->Position.y >= 0)
 			{
 				if (this->Keys[GLFW_KEY_Q]) velocity *= 2;
@@ -163,7 +188,16 @@ void Game::ProcessInput(GLfloat dt)
 			for (int i = 0; i < SHELLNUM; i++)
 			{
 				HuajiShell[i]->Position = Player->Position + glm::vec2(PLAYER_SIZE.x / 2 - SHELL_RADIUS, -SHELL_RADIUS * 2);
-				HuajiShell[i]->Stuck = GL_FALSE;
+				HuajiShell[i]->IsExist = GL_TRUE;
+				HuajiShell[i]->IsRender = GL_TRUE;
+				switch (Player->Direction)
+				{
+				case 1:HuajiShell[i]->Velocity = glm::vec2(0.0f, -400.f); break;
+				case 2:HuajiShell[i]->Velocity = glm::vec2(0.0f, 400.f); break;
+				case 3:HuajiShell[i]->Velocity = glm::vec2(-400.0f, 0.f); break;
+				case 4:HuajiShell[i]->Velocity = glm::vec2(400.0f, 0.f); break;
+				default:std::cout << "ERROR::at:game.cpp::ProcessInput" << std::endl;
+				}
 			}
 		}
 		if (this->Keys[GLFW_KEY_SPACE])
@@ -171,43 +205,84 @@ void Game::ProcessInput(GLfloat dt)
 			for (int i = 0; i < SHELLNUM; i++)
 				HuajiShell[i]->Reset(Player->Position, SHELL_INIT_V + glm::vec2(50 * i, 50 * i));
 		}
+
+		//Mouse Function
+		if (this->Mouse[GLFW_MOUSE_BUTTON_LEFT])
+		{
+			for (int i = 0; i < SHELLNUM; i++)
+			{
+				HuajiShell[i]->Position = Player->Position + glm::vec2(PLAYER_SIZE.x / 2 - SHELL_RADIUS, -SHELL_RADIUS * 2);
+				HuajiShell[i]->IsExist = GL_TRUE;
+				HuajiShell[i]->IsRender = GL_TRUE;
+				double CursorLenth = sqrt((this->CursorX - Player->Position.x) * (this->CursorX - Player->Position.x) + (this->CursorY - Player->Position.y) * (this->CursorY -Player->Position.y));
+				float Vx = (this->CursorX - Player->Position.x) / CursorLenth;
+				float Vy = (this->CursorY - Player->Position.y) / CursorLenth;
+				HuajiShell[i]->Velocity = glm::vec2(Vx * 400, Vy * 400);
+			}
+		}
 	}
 }
 
 
 void Game::Render()
 {
+	std::string BackgroundTextureNameInThisLevel[LEVEL_NUM];
+	for(int i = 0; i < LEVEL_NUM; i++)
+		BackgroundTextureNameInThisLevel[i] = getName("background", i , 32767, "");
+	
+	float magnification = 1;
 	if (this->State == GAME_ACTIVE)
 	{
 		Effects->BeginRender();
+
 		//Move ViewWindow
-		float magnification = 1.2;
-		//if (Player->Position.y < (WINDOW_HEIGHT - PLAYER_SIZE.y * 2))
-		//	glViewport(-(Player->Position.x) * (magnification - 1), -(WINDOW_HEIGHT - Player->Position.y) * (magnification - 1), WINDOW_WIDTH * magnification, WINDOW_HEIGHT * magnification);
-		//else
-			glViewport(-(Player->Position.x) * (magnification - 1), -(WINDOW_HEIGHT - Player->Position.y - PLAYER_SIZE.y) * (magnification - 1), WINDOW_WIDTH * magnification, WINDOW_HEIGHT * magnification);
-		Renderer->DrawSprite(ResourceManager::GetTexture("background1"), glm::vec2(0, 0), glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT), 0.0f);
-		//Render Background and Enemy
+		/*if (Player->Position.y < (this->Height - PLAYER_SIZE.y * 2))
+			glViewport(-(Player->Position.x) * (magnification - 1), -(this->Height - Player->Position.y) * (magnification - 1), WINDOW_WIDTH * magnification, this->Height * magnification);
+		else*/
+		glViewport(-(Player->Position.x) * (magnification - 1), -(this->Height - Player->Position.y -Player->Size.y) * (magnification - 1), this->Width * magnification, this->Height * magnification);
+
+		//Render background
+		Renderer->DrawSprite(ResourceManager::GetTexture(BackgroundTextureNameInThisLevel[LevelThInGame]), glm::vec2(0, 0), glm::vec2(this->Width, this->Height), 0.0f);
+
+		//Render Substance
+		for (int i = 0; i < LevelInGame->substanceNumberInThisLevel; i++)
+			if (LevelInGame->Substance[LevelThInGame][i]->IsExist == GL_TRUE && LevelInGame->Substance[LevelThInGame][i]->IsRender == GL_TRUE)
+			{
+				LevelInGame->Substance[LevelThInGame][i]->Draw(*Renderer);
+			}
+
+		//Render Enemy
 		for (int i = 0; i < LevelInGame->enemyNumberInThisLevel; i++)
-			LevelInGame->Enemy[LevelThInGame][i]->IsExist = GL_TRUE;
-		for (int i = 0; i < LevelInGame->enemyNumberInThisLevel; i++)
-			if ((LevelInGame->Enemy[LevelInGame->levelTh][i]->IsExist == GL_TRUE) && LevelInGame->Enemy[LevelInGame->levelTh][i]->Destroyed == GL_FALSE)
+		{
+			LevelInGame->Enemy[LevelThInGame][i]->IsRender = GL_TRUE;
+			if ((LevelInGame->Enemy[LevelThInGame][i]->IsExist == GL_TRUE) && LevelInGame->Enemy[LevelInGame->levelTh][i]->IsRender == GL_TRUE)
 			{
 				LevelInGame->Enemy[LevelInGame->levelTh][i]->Draw(*Renderer);
 			}
+		}
+
 		//Render Player and Shells
 		Player->Draw(*Renderer);
 		Particles->Draw();
 		for (int i = 0; i < SHELLNUM; i++)
-			if (HuajiShell[i]->Stuck == false)
+			if (HuajiShell[i]->IsExist == GL_TRUE && HuajiShell[i]->IsRender == GL_TRUE)
 				HuajiShell[i]->Draw(*Renderer);
-		//Render Fonts
-		std::stringstream ss; ss << "Posx:" << Player->Position.x << "Posy:" << Player->Position.y;
-		Text->RenderText("Your Pos:" + ss.str(), 0.0f, 890.0f, 1.0f);
+
+		/*//Render Fonts Here
+		std::stringstream ss; ss << "X:" << Player->Position.x << ",Y:" << Player->Position.y;
+		float tm = (magnification * magnification - 1) / (magnification * magnification);
+		//Text->RenderText(ss.str(), Player->Position.x * tm, (Player->Position.y + Player->Size.y) * tm, 1.0f);*/
+
 		//End Effects
 		Effects->EndRender();
 		Effects->Render(glfwGetTime());
 	}
+
+	//Render Fonts
+	std::stringstream ss; ss << "X:" << Player->Position.x << ",Y:" << Player->Position.y;
+	float tm = 1 - 1/magnification;
+	Text->RenderText(ss.str(), Player->Position.x * tm, (Player->Position.y + Player->Size.y) * tm, (1 - tm));
+
 	Renderer->DrawSprite(ResourceManager::GetTexture("face"), glm::vec2(200, 200), glm::vec2(300, 400), 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
@@ -220,25 +295,26 @@ void Game::DoCollisions()
 	{
 		for (int j = 0; j < LevelInGame->enemyNumberInThisLevel; j++)
 		{
-			if (LevelInGame->Enemy[LevelThInGame][j]->Destroyed == false && HuajiShell[i]->Stuck == false)
+			if (LevelInGame->Enemy[LevelThInGame][j]->IsExist == GL_TRUE && HuajiShell[i]->IsExist == GL_TRUE)
 			{
 				Collision resultSG = CheckCollisionSG(*(HuajiShell[i]), *(LevelInGame->Enemy[LevelThInGame][j]));
 				if (std::get<0>(resultSG))
 				{
 					SoundEngine->play2D("res/sound/boom.mp3", GL_FALSE);
 					std::cout << "play" << std::endl;
+					std::cout << Player->EventUnicode[2] << std::endl;
 					ShakeTime = 0.05f;
 					Effects->Shake = GL_TRUE;
 					Direction direct = std::get<1>(resultSG);
 					if (direct == LEFT || direct == RIGHT)
 					{
 						HuajiShell[i]->Velocity.x = -HuajiShell[i]->Velocity.x;
-						LevelInGame->Enemy[LevelThInGame][j]->Destroyed = GL_TRUE;
+						LevelInGame->Enemy[LevelThInGame][j]->IsExist = GL_FALSE;
 					}
 					else
 					{
 						HuajiShell[i]->Velocity.y = -HuajiShell[i]->Velocity.y;
-						LevelInGame->Enemy[LevelThInGame][j]->Destroyed = GL_TRUE;
+						LevelInGame->Enemy[LevelThInGame][j]->IsExist = GL_FALSE;
 					}
 				}
 			}
@@ -248,7 +324,7 @@ void Game::DoCollisions()
 	//If Enemy hit me
 	for (int i = 0; i < LevelInGame->enemyNumberInThisLevel; i++)
 	{
-		if (LevelInGame->Enemy[LevelThInGame][i]->Destroyed == GL_FALSE)
+		if (LevelInGame->Enemy[LevelThInGame][i]->IsExist == GL_TRUE)
 		{
 			Collision resultGG = CheckCollisionGG(*(LevelInGame->Enemy[LevelThInGame][i]), *(Player));
 			if (std::get<0>(resultGG))
@@ -282,9 +358,9 @@ void Game::ResetPlayer()
 	Player->Velocity = PLAYER_INIT_V;
 	for (int i = 0; i < LevelInGame->enemyNumberInThisLevel; i++)
 	{
-		LevelInGame->Enemy[LevelThInGame][i]->Destroyed = GL_FALSE;
+		LevelInGame->Enemy[LevelThInGame][i]->IsExist = GL_TRUE;
 	}
-	//std::cout << "You have been killed X " << KillTimes++ << std::endl;
+	std::cout << "You have been killed X " << KillTimes++ << std::endl;
 }
 
 
@@ -297,12 +373,16 @@ void Game::ResetShell()
 		glm::vec2 ballPos = playerPos + glm::vec2(PLAYER_SIZE.x / 2 - SHELL_RADIUS, -SHELL_RADIUS * 2);
 		HuajiShell[i]->Position = ballPos;
 		HuajiShell[i]->Velocity = SHELL_INIT_V + glm::vec2(5 * i, 5 * i);
-		HuajiShell[i]->Destroyed = false;
-		HuajiShell[i]->Stuck = true;
+		HuajiShell[i]->IsExist = GL_FALSE;
+		HuajiShell[i]->IsRender = GL_FALSE;
 	}
 }
 
-
+void Game::getWindowSize(int widthNow, int heightNow)
+{
+	this->Width = widthNow;
+	this->Height = heightNow;
+}
 
 
 

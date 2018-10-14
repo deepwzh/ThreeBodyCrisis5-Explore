@@ -31,9 +31,9 @@ enum Direction {
 
 typedef std::tuple<GLboolean, Direction, glm::vec2> Collision;
 
-const glm::vec2 PLAYER_SIZE(30, 25);
+const glm::vec2 PLAYER_SIZE(15, 12);
 const glm::vec2 PLAYER_INIT_V(400.0f, 400.0f);
-const glm::vec2 SHELL_INIT_V(500.0f, -300.0f);
+const glm::vec2 SHELL_INIT_V(0.0f, 0.0f);
 const GLfloat SHELL_RADIUS = 6.0f;
 
 
@@ -43,20 +43,23 @@ class Game
 public:
 	GameState State;
 	GLboolean Keys[1024];
+	GLboolean Mouse[4];
 	GLuint Width, Height;
+	GLint CursorX, CursorY;
 	//Level LevelInGame;
 	GLint LevelThInGame;
 
-	Game(GLuint width, GLuint height);
+	Game();
 	~Game();
 	void Init();
 	void ProcessInput(GLfloat dt);
-	void Update(GLfloat dt);
+	void Update(GLfloat dt, GLfloat poscx, GLfloat poscy);
 	void Render();
 	void DoCollisions();
 	// Reset
 	void ResetPlayer();
 	void ResetShell();
+	void getWindowSize(int widthNow, int heightNow);
 };
 
 Collision CheckCollisionGG(GameObject &one, GameObject &two);

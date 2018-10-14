@@ -13,7 +13,6 @@ class EnemyObject : public GameObject
 {
 public:
 	GLint HealthPoint;
-	GLboolean IsExist;
 
 	EnemyObject();
 	EnemyObject(glm::vec2 pos, glm::vec2 size, glm::vec2 velocity, GLint hp, Texture2D sprite);
