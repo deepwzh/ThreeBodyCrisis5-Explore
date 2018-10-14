@@ -1,7 +1,8 @@
 #include "game.h"
 using namespace irrklang;
 const int SHELLNUM = 10;
-
+GLboolean speedDone = GL_FALSE;
+int killedTimes = 0;
 SpriteRenderer		*Renderer;
 PlayerObject		*Player;
 ShellObject			*HuajiShell[SHELLNUM];
@@ -12,7 +13,8 @@ PostProcessor		*Effects;
 GLfloat				ShakeTime = 0.0f;
 ISoundEngine		*SoundEngine = createIrrKlangDevice();
 
-
+void Skill1Swamp(GLfloat x1, GLfloat x2, GLfloat y1, GLfloat y2, GLfloat speedplus);
+void Skill2Blackhole(GLfloat posx, GLfloat posy, GLfloat intensity, GLfloat dt);
 
 Game::Game()
 	: State(GAME_ACTIVE), Keys(), CursorX(0),CursorY(0){
@@ -49,7 +51,7 @@ void Game::Init()
 	ResourceManager::LoadTexture("res/pic/myship0left.png", GL_TRUE, "player0left");
 	ResourceManager::LoadTexture("res/pic/myship0down.png", GL_TRUE, "player0down");
 	ResourceManager::LoadTexture("res/pic/myship0right.png", GL_TRUE, "player0right");
-	ResourceManager::LoadTexture("res/pic/huaji.png", GL_TRUE, "huajishell");
+	ResourceManager::LoadTexture("res/pic/shell0.png", GL_TRUE, "huajishell");
 	glm::vec2 playerPos = glm::vec2(0, this->Height - PLAYER_SIZE.y);
 	Player = new PlayerObject(playerPos, PLAYER_SIZE, PLAYER_INIT_V, ResourceManager::GetTexture("player0up"));
 	Player->Direction = 1;
@@ -82,7 +84,6 @@ void Game::Init()
 }
 
 
-GLboolean isV = GL_FALSE;
 void Game::Update(GLfloat dt, GLfloat poscx, GLfloat poscy)
 {
 	this->CursorX = poscx;
@@ -117,20 +118,6 @@ void Game::Update(GLfloat dt, GLfloat poscx, GLfloat poscy)
 	{
 		this->ResetPlayer();
 	}
-
-	//ÒýÁ¦³¡ºÚ¶´
-	if (Player->Position.x > 1200 && Player->Position.y > 500 && isV == GL_FALSE)
-	{
-		Player->Velocity *= 0.2;
-		std::cout <<"Speed Now:"<< Player->Velocity.x << std::endl;
-		isV = GL_TRUE;
-	}
-	if ((Player->Position.x <= 1200 || (Player->Position.x >= 1200 && Player->Position.y <= 500)) && isV == GL_TRUE)
-	{
-		Player->Velocity *= 5;
-		std::cout << "Speed Now:" << Player->Velocity.x << std::endl;
-		isV = GL_FALSE;
-	}
 }
 
 
@@ -140,7 +127,9 @@ void Game::ProcessInput(GLfloat dt)
 	{
 		glm::vec2 velocity(Player->Velocity.x * dt, Player->Velocity.y * dt);
 
-		// Move playerboard
+		/********************************************************
+		 ******************** Move playerboard*******************
+		 ********************************************************/
 		if (this->Keys[GLFW_KEY_LEFT] || this->Keys[GLFW_KEY_A])
 		{
 			Player->Sprite = ResourceManager::GetTexture("player0left");
@@ -181,8 +170,9 @@ void Game::ProcessInput(GLfloat dt)
 				Player->Position.y -= velocity.y;
 			}
 		}
-
-		//Function playerboard
+		/********************************************************
+		 *******************Function playerboard*****************
+		 ********************************************************/
 		if (this->Keys[GLFW_KEY_J])
 		{
 			for (int i = 0; i < SHELLNUM; i++)
@@ -205,8 +195,9 @@ void Game::ProcessInput(GLfloat dt)
 			for (int i = 0; i < SHELLNUM; i++)
 				HuajiShell[i]->Reset(Player->Position, SHELL_INIT_V + glm::vec2(50 * i, 50 * i));
 		}
-
-		//Mouse Function
+		/********************************************************
+		 **********************Mouse Function********************
+		 ********************************************************/
 		if (this->Mouse[GLFW_MOUSE_BUTTON_LEFT])
 		{
 			for (int i = 0; i < SHELLNUM; i++)
@@ -220,6 +211,13 @@ void Game::ProcessInput(GLfloat dt)
 				HuajiShell[i]->Velocity = glm::vec2(Vx * 400, Vy * 400);
 			}
 		}
+		if (this->Mouse[GLFW_MOUSE_BUTTON_RIGHT])
+		{
+			double PlayerMouseLength = sqrt((this->CursorX - Player->Position.x) * (this->CursorX - Player->Position.x) + (this->CursorY - Player->Position.y) * (this->CursorY - Player->Position.y));
+			float PMx = (this->CursorX - Player->Position.x) / PlayerMouseLength;
+			float PMy = (this->CursorY - Player->Position.y) / PlayerMouseLength;
+			Player->Position += glm::vec2(PMx * 200.0 * dt, PMy * 200.0 * dt);
+		}
 	}
 }
 
@@ -230,7 +228,7 @@ void Game::Render()
 	for(int i = 0; i < LEVEL_NUM; i++)
 		BackgroundTextureNameInThisLevel[i] = getName("background", i , 32767, "");
 	
-	float magnification = 1;
+	float magnification = 2;
 	if (this->State == GAME_ACTIVE)
 	{
 		Effects->BeginRender();
@@ -263,7 +261,7 @@ void Game::Render()
 
 		//Render Player and Shells
 		Player->Draw(*Renderer);
-		Particles->Draw();
+		//Particles->Draw();
 		for (int i = 0; i < SHELLNUM; i++)
 			if (HuajiShell[i]->IsExist == GL_TRUE && HuajiShell[i]->IsRender == GL_TRUE)
 				HuajiShell[i]->Draw(*Renderer);
@@ -345,8 +343,6 @@ void Game::DoCollisions()
 	}
 }
 
-
-int KillTimes = 0;
 //Have not finished
 void Game::ResetPlayer()
 {
@@ -360,7 +356,7 @@ void Game::ResetPlayer()
 	{
 		LevelInGame->Enemy[LevelThInGame][i]->IsExist = GL_TRUE;
 	}
-	std::cout << "You have been killed X " << KillTimes++ << std::endl;
+	std::cout << "You have been killed X " << killedTimes++ << std::endl;
 }
 
 
@@ -385,6 +381,37 @@ void Game::getWindowSize(int widthNow, int heightNow)
 }
 
 
+/*****************************************************************************
+Skill Below:
+1. Swmp:If player come into this, your speed will be reduced to the original
+"speedplus"(0<speedplus<1);
+2. Black hole: Player will be attracted to an object automatically with a
+intensity;
+*****************************************************************************/
+void Skill1Swamp(GLfloat x1, GLfloat x2, GLfloat y1, GLfloat y2, GLfloat speedplus)
+{
+	//Swamp
+	if (speedDone == GL_FALSE && Player->Position.x > x1 && Player->Position.x < x2 && Player->Position.y > y1 && Player->Position.y < y2)
+	{
+		Player->Velocity *= speedplus;
+		std::cout << "Speed Now:" << Player->Velocity.x << std::endl;
+		speedDone = GL_TRUE;
+	}
+
+	if (speedDone == GL_TRUE && ((Player->Position.x <= x1) || (Player->Position.x >= x2) || (Player->Position.y <= y1) || (Player->Position.y > y2)))
+	{
+		Player->Velocity *= (1/speedplus);
+		std::cout << "Speed Now:" << Player->Velocity.x << std::endl;
+		speedDone = GL_FALSE;
+	}
+}
+
+void Skill2Blackhole(GLfloat posx, GLfloat posy, GLfloat intensity, GLfloat dt)
+{
+	//Gravitational field black hole
+	GLfloat speedLength = sqrt((posx - Player->Position.x) * (posx - Player->Position.x) + (posy - Player->Position.y) * (posy - Player->Position.y));
+	Player->PlayerMoveItself(glm::vec2((posx / speedLength) * intensity, (posy / speedLength) * intensity), dt);
+}
 
 /**************************************************************************************
 Collision Checkers Below;

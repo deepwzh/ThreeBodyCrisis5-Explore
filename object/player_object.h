@@ -21,6 +21,7 @@ public:
 	GLuint Direction; //UP,DOWN,LEFT,TIGHE = 1,2,3,4
 	PlayerObject();
 	PlayerObject(glm::vec2 pos, glm::vec2 size, glm::vec2 v, Texture2D sprite);
+	void PlayerMoveItself(glm::vec2 v, float dt);
 };
 
 #endif

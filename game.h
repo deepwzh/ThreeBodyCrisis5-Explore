@@ -34,7 +34,7 @@ typedef std::tuple<GLboolean, Direction, glm::vec2> Collision;
 const glm::vec2 PLAYER_SIZE(15, 12);
 const glm::vec2 PLAYER_INIT_V(400.0f, 400.0f);
 const glm::vec2 SHELL_INIT_V(0.0f, 0.0f);
-const GLfloat SHELL_RADIUS = 6.0f;
+const GLfloat SHELL_RADIUS = 2.0f;
 
 
 
@@ -44,11 +44,11 @@ public:
 	GameState State;
 	GLboolean Keys[1024];
 	GLboolean Mouse[4];
+	//GLfloat SkillSwitch[3][10];//i is Th;j is Formal parameters, j's first is switch,0 or 1
 	GLuint Width, Height;
 	GLint CursorX, CursorY;
 	//Level LevelInGame;
 	GLint LevelThInGame;
-
 	Game();
 	~Game();
 	void Init();
