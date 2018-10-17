@@ -1,0 +1,22 @@
+{
+    "username": "201601060928", 
+    "level": 1,
+    "lv": 1,
+    "exp": 555,
+    "hp": 100,
+    "snapshot": {
+        "player": {
+            "postion": [14.22,35.35],
+        },
+        "enemy": {
+            "is_exist": [1,1,0,1,0,1,0,0,0],
+            "postion": [14.22,35.35],
+            "speed": [9,12,15]
+        },
+        "shell": {
+            "postion": [14.22,35.35],
+            "speed": [9,12,15]
+        }
+    },
+    "update_time": 
+}

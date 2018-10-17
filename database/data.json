@@ -1,0 +1,22 @@
+{
+	"config" : 
+	{
+		"AAA" : 
+		[
+			1,
+			2,
+			3
+		]
+	},
+	"exp" : 666,
+	"hp" : 777,
+	"is_public" : 1,
+	"level" : 999,
+	"lv" : 888,
+	"save_time" : 1,
+	"snapshot" : 
+	{
+		"Hello" : "World"
+	},
+	"user_id" : "201601060928"
+}
